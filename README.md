@@ -1,3 +1,5 @@
+**Todo o código foi criado com Claude Sonet 5.5 Médio, fiz uma revisão e tenho a integração funcionando no meu Home Assistant com 3 botijas.**
+
 # Galp Pluma para o Home Assistant
 
 Integração não oficial que lê o **nível de gás (%)** e a **temperatura** das
