@@ -38,6 +38,11 @@ garrafas Galp Pluma com Bluetooth, sem usar a app Mundo Galp nem a conta Galp.
    exemplo "Pluma fogão"). O número do nome Bluetooth não coincide com o
    código impresso na garrafa, por isso não serve para as distinguir.
 
+   <img width="1064" height="759" alt="image" src="https://github.com/user-attachments/assets/c5b5b33a-c1c3-4bb5-8416-e62854d03153" />
+   <img width="1280" height="583" alt="image" src="https://github.com/user-attachments/assets/4cc0600e-cb1f-49b1-a65f-35b4f16d5ef7" />
+   <img width="1280" height="579" alt="image" src="https://github.com/user-attachments/assets/f80ca782-86f5-48d2-8bf9-d13b00fc701c" />
+
+
 ## Notas de utilização
 
 - **Uma só ligação de cada vez:** a garrafa aceita um cliente. Se a app Galp
