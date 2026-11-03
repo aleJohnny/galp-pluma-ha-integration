@@ -1,0 +1,49 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Adicionar uma garrafa Galp Pluma",
+        "description": "Escolha uma garrafa vista pelos seus adaptadores ou proxies Bluetooth.",
+        "data": {
+          "address": "Garrafa"
+        }
+      },
+      "bluetooth_confirm": {
+        "title": "Adicionar uma garrafa Galp Pluma",
+        "description": "Quer configurar {name}?"
+      }
+    },
+    "abort": {
+      "no_devices_found": "Não foram encontradas garrafas Pluma por perto. Confirme que há um adaptador ou proxy Bluetooth ao alcance (a garrafa só é visível quando está acordada).",
+      "already_configured": "Esta garrafa já está configurada.",
+      "already_in_progress": "A configuração desta garrafa já está em curso."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opções da Galp Pluma",
+        "data": {
+          "scan_interval": "Minutos entre leituras"
+        },
+        "data_description": {
+          "scan_interval": "Cada leitura acorda a garrafa e gasta a bateria dela. Recomendam-se 15 minutos ou mais."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "level": {
+        "name": "Nível de gás"
+      },
+      "temperature": {
+        "name": "Temperatura"
+      },
+      "raw_byte_7": {
+        "name": "Valor bruto (byte 7)"
+      }
+    }
+  }
+}

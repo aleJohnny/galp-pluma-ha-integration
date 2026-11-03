@@ -1,0 +1,49 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Add a Galp Pluma cylinder",
+        "description": "Choose a cylinder seen by your Bluetooth adapters or proxies.",
+        "data": {
+          "address": "Cylinder"
+        }
+      },
+      "bluetooth_confirm": {
+        "title": "Add a Galp Pluma cylinder",
+        "description": "Do you want to set up {name}?"
+      }
+    },
+    "abort": {
+      "no_devices_found": "No Pluma cylinders found nearby. Make sure a Bluetooth adapter or proxy is within range (the cylinder is only visible when awake).",
+      "already_configured": "This cylinder is already configured.",
+      "already_in_progress": "Setup of this cylinder is already in progress."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Galp Pluma options",
+        "data": {
+          "scan_interval": "Minutes between readings"
+        },
+        "data_description": {
+          "scan_interval": "Each reading wakes the cylinder and uses its battery. 15 minutes or more is recommended."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "level": {
+        "name": "Gas level"
+      },
+      "temperature": {
+        "name": "Temperature"
+      },
+      "raw_byte_7": {
+        "name": "Raw value (byte 7)"
+      }
+    }
+  }
+}
