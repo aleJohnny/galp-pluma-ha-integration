@@ -1,1 +1,7 @@
 *.code-workspace
+__pycache__/
+*.py[cod]
+.hass/
+.venv/
+venv/
+.storage/
