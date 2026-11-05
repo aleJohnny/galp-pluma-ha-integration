@@ -1,5 +1,7 @@
 {
   "name": "Galp Pluma",
+  "content_in_root": false,
+  "zip_release": false,
   "homeassistant": "2026.1.0",
   "render_readme": true
 }
