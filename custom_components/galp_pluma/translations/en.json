@@ -74,11 +74,11 @@
         "name": "Gas type",
         "state": { "butane": "Butane", "propane": "Propane" }
       }
-    },
-    "selector": {
-      "gas_type": {
-      "options": { "butane": "Butane", "propane": "Propane" }
-      }
+    }
+  },
+  "selector": {
+    "gas_type": {
+    "options": { "butane": "Butane", "propane": "Propane" }
     }
   }
 }
