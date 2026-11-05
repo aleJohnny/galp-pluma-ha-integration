@@ -1,16 +1,9 @@
 {
   "domain": "galp_pluma",
   "name": "Galp Pluma",
-  "version": "0.2.2",
   "codeowners": [
     "@aleJohnny"
   ],
-  "config_flow": true,
-  "documentation": "https://github.com/aleJohnny/galp-pluma-ha-integration",
-  "issue_tracker": "https://github.com/aleJohnny/galp-pluma-ha-integration/issues",
-  "integration_type": "device",
-  "iot_class": "local_polling",
-  "requirements": [],
   "bluetooth": [
     {
       "local_name": "Pluma*",
@@ -21,5 +14,12 @@
       "connectable": true
     }
   ],
-  "dependencies": ["bluetooth_adapters"]
+  "config_flow": true,
+  "dependencies": ["bluetooth_adapters"],
+  "documentation": "https://github.com/aleJohnny/galp-pluma-ha-integration",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/aleJohnny/galp-pluma-ha-integration/issues",
+  "requirements": [],
+  "version": "0.2.3"
 }
