@@ -2,16 +2,25 @@
 
 DOMAIN = "galp_pluma"
 
-CONF_SCAN_INTERVAL = "scan_interval"  # em minutos
+CONF_SCAN_INTERVAL = "scan_interval"  # em minutos; 0 = só leitura manual
 
 DEFAULT_SCAN_INTERVAL = 15
 MIN_SCAN_INTERVAL = 5
-MAX_SCAN_INTERVAL = 240
+MAX_SCAN_INTERVAL = 43200  # 30 dias
+MANUAL_ONLY = 0
 
-# A garrafa entra em deep sleep: depois de uma falha tenta-se de novo mais cedo
-# antes de dar o sensor como indisponível.
+# A garrafa entra em deep sleep: depois de uma falha tenta-se de novo mais cedo.
 RETRY_INTERVAL_MINUTES = 3
 MAX_CONSECUTIVE_FAILURES = 5
+
+# Depois das tentativas rápidas, continua-se a tentar de hora a hora (ou no
+# intervalo normal, se for mais curto), para que um intervalo de dias não adie
+# uma leitura falhada por uma semana inteira.
+GIVE_UP_RETRY_MINUTES = 60
+
+# Uma leitura falhada não torna os sensores indisponíveis enquanto a última
+# leitura boa for mais recente do que max(2 x intervalo, STALE_MIN_MINUTES).
+STALE_MIN_MINUTES = 60
 
 NAME_PREFIX = "Pluma"
 

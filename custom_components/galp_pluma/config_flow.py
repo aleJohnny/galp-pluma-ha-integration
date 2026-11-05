@@ -13,6 +13,7 @@ from homeassistant.components.bluetooth import (
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import callback
+from homeassistant.helpers import selector
 from homeassistant.helpers.device_registry import format_mac
 
 from .const import (
@@ -118,18 +119,32 @@ class PlumaOptionsFlow(OptionsFlow):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
+        errors: dict[str, str] = {}
+        current = int(
+            self.config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+        )
         if user_input is not None:
-            return self.async_create_entry(data=user_input)
+            minutes = int(user_input[CONF_SCAN_INTERVAL])
+            if 0 < minutes < MIN_SCAN_INTERVAL:
+                errors["base"] = "interval_too_short"
+                current = minutes
+            else:
+                return self.async_create_entry(data={CONF_SCAN_INTERVAL: minutes})
 
-        current = self.config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_SCAN_INTERVAL, default=current): vol.All(
-                        vol.Coerce(int),
-                        vol.Range(min=MIN_SCAN_INTERVAL, max=MAX_SCAN_INTERVAL),
+                    vol.Required(CONF_SCAN_INTERVAL, default=current): selector.NumberSelector(
+                        selector.NumberSelectorConfig(
+                            min=0,
+                            max=MAX_SCAN_INTERVAL,
+                            step=1,
+                            mode=selector.NumberSelectorMode.BOX,
+                            unit_of_measurement="min",
+                        )
                     )
                 }
             ),
+            errors=errors,
         )

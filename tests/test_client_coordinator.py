@@ -5,7 +5,7 @@ conftest.py). Não substituem um teste com a garrafa nem com o Home Assistant.
 """
 
 import asyncio
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -143,52 +143,164 @@ def _coordinator(module, device="present", options=None):
     return module.PlumaCoordinator(hass, entry, "AA:BB:CC:DD:EE:FF")
 
 
-@coordinator_tests
-def test_coordinator_default_interval(coordinator_module):
-    coord = _coordinator(coordinator_module)
-    assert coord.update_interval == timedelta(minutes=15)
+class Clock:
+    """Relógio controlável para substituir dt_util.utcnow nos testes."""
+
+    def __init__(self):
+        self.now = datetime(2026, 11, 4, 8, 0, tzinfo=timezone.utc)
+
+    def __call__(self):
+        return self.now
+
+    def advance(self, **kwargs):
+        self.now += timedelta(**kwargs)
 
 
-@coordinator_tests
-def test_coordinator_custom_interval(coordinator_module):
-    coord = _coordinator(coordinator_module, options={"scan_interval": 30})
-    assert coord.update_interval == timedelta(minutes=30)
+@pytest.fixture
+def clock(coordinator_module, monkeypatch):
+    fake = Clock()
+    monkeypatch.setattr(coordinator_module.dt_util, "utcnow", fake)
+    return fake
 
 
-@coordinator_tests
-def test_coordinator_tolerates_failures_then_gives_up(coordinator_module, monkeypatch):
-    coord = _coordinator(coordinator_module)
-    good = protocol.parse_status(GOOD_FRAME)
-    outcome = {"value": good}
+def _patch_read(monkeypatch, module, outcome):
+    """`outcome["value"]` é a leitura a devolver ou a exceção a lançar."""
 
     async def fake_read(device, **kwargs):
         if isinstance(outcome["value"], Exception):
             raise outcome["value"]
         return outcome["value"]
 
-    monkeypatch.setattr(coordinator_module, "async_read_status", fake_read)
+    monkeypatch.setattr(module, "async_read_status", fake_read)
+
+
+@coordinator_tests
+def test_interval_from_minutes(coordinator_module):
+    f = coordinator_module.interval_from_minutes
+    assert f(None) is None
+    assert f(0) is None  # 0 = só leitura manual
+    assert f(-5) is None
+    assert f(60) == timedelta(hours=1)
+    assert f(43200) == timedelta(days=30)
+
+
+@coordinator_tests
+def test_coordinator_default_interval(coordinator_module):
+    from galp_pluma import const
+
+    coord = _coordinator(coordinator_module)
+    assert coord.update_interval == timedelta(minutes=const.DEFAULT_SCAN_INTERVAL)
+
+
+@coordinator_tests
+def test_each_bottle_has_its_own_interval(coordinator_module):
+    in_use = _coordinator(coordinator_module, options={"scan_interval": 1440})
+    reserve = _coordinator(coordinator_module, options={"scan_interval": 10080})
+    default = _coordinator(coordinator_module)
+    assert in_use.update_interval == timedelta(days=1)
+    assert reserve.update_interval == timedelta(days=7)
+    assert default.update_interval not in (in_use.update_interval, reserve.update_interval)
+
+
+@coordinator_tests
+def test_manual_only_has_no_polling(coordinator_module):
+    coord = _coordinator(coordinator_module, options={"scan_interval": 0})
+    assert coord.update_interval is None
+
+
+@coordinator_tests
+def test_apply_options_changes_interval_and_reschedules(coordinator_module, monkeypatch):
+    coord = _coordinator(coordinator_module, options={"scan_interval": 30})
+    calls = []
+    # O coordinator de substituição não tem estes métodos; no Home Assistant real
+    # existem (com nomes que variam por versão), por isso regista-se só o que se chama.
+    monkeypatch.setattr(coord, "_async_unsub_refresh", lambda: calls.append("unsub"), raising=False)
+    monkeypatch.setattr(coord, "_schedule_refresh", lambda: calls.append("schedule"), raising=False)
+
+    coord.config_entry.options = {"scan_interval": 1440}
+    coord.async_apply_options()
+    assert coord.update_interval == timedelta(days=1)
+    assert calls == ["unsub", "schedule"]  # cancela o temporizador antigo, depois agenda
+    assert coord.listeners_called == 1  # a entidade number atualiza-se
+
+    calls.clear()
+    coord.config_entry.options = {"scan_interval": 0}
+    coord.async_apply_options()
+    assert coord.update_interval is None
+    assert calls == ["unsub", "schedule"]
+    assert coord.listeners_called == 2
+
+
+@coordinator_tests
+def test_failures_keep_last_value_and_back_off_to_hourly(coordinator_module, monkeypatch, clock):
+    # Garrafa lida uma vez por dia: uma leitura falhada não pode adiar a seguinte
+    # por um dia inteiro.
+    coord = _coordinator(coordinator_module, options={"scan_interval": 1440})
+    good = protocol.parse_status(GOOD_FRAME)
+    outcome = {"value": good}
+    _patch_read(monkeypatch, coordinator_module, outcome)
 
     # 1) leitura boa
     coord.data = asyncio.run(coord._async_update_data())
     assert coord.data.level == 97
-    assert coord.update_interval == timedelta(minutes=15)
+    assert coord.last_read == clock.now
+    assert coord.update_interval == timedelta(days=1)
 
-    # 2) falhas: mantém o último valor e passa a tentar de 3 em 3 minutos
+    # 2) falhas: mantém o último valor e tenta de 3 em 3 minutos
     outcome["value"] = protocol.PlumaConnectionError("a dormir")
+    clock.advance(days=1)
     for _ in range(4):
-        data = asyncio.run(coord._async_update_data())
-        assert data is good
+        assert asyncio.run(coord._async_update_data()) is good
         assert coord.update_interval == timedelta(minutes=3)
+        clock.advance(minutes=3)
 
-    # 3) à 5.ª falha seguida desiste e volta ao intervalo normal
-    with pytest.raises(coordinator_module.UpdateFailed):
-        asyncio.run(coord._async_update_data())
-    assert coord.update_interval == timedelta(minutes=15)
+    # 3) esgotadas as tentativas rápidas, continua de hora a hora (e não de dia a dia)
+    for _ in range(2):
+        assert asyncio.run(coord._async_update_data()) is good
+        assert coord.update_interval == timedelta(minutes=60)
+    assert coord.last_error == "a dormir"
 
-    # 4) recuperação
+    # 4) recuperação: volta ao intervalo da garrafa
     outcome["value"] = good
     assert asyncio.run(coord._async_update_data()).level == 97
     assert coord._failures == 0
+    assert coord.last_error is None
+    assert coord.update_interval == timedelta(days=1)
+
+
+@coordinator_tests
+def test_becomes_unavailable_only_when_last_good_reading_is_too_old(
+    coordinator_module, monkeypatch, clock
+):
+    # Intervalo de 15 min: limite = max(2 x 15 min, 60 min) = 60 min.
+    coord = _coordinator(coordinator_module, options={"scan_interval": 15})
+    good = protocol.parse_status(GOOD_FRAME)
+    outcome = {"value": good}
+    _patch_read(monkeypatch, coordinator_module, outcome)
+    coord.data = asyncio.run(coord._async_update_data())
+
+    outcome["value"] = protocol.PlumaConnectionError("a dormir")
+    clock.advance(minutes=59)
+    assert asyncio.run(coord._async_update_data()) is good  # ainda aceitável
+
+    clock.advance(minutes=2)  # passou de 60 min sem nenhuma leitura boa
+    with pytest.raises(coordinator_module.UpdateFailed):
+        asyncio.run(coord._async_update_data())
+    assert coord.update_interval == timedelta(minutes=15)  # continua a tentar
+
+
+@coordinator_tests
+def test_manual_only_keeps_value_and_never_schedules_retries(coordinator_module, monkeypatch, clock):
+    coord = _coordinator(coordinator_module, options={"scan_interval": 0})
+    good = protocol.parse_status(GOOD_FRAME)
+    outcome = {"value": good}
+    _patch_read(monkeypatch, coordinator_module, outcome)
+    coord.data = asyncio.run(coord._async_update_data())
+
+    outcome["value"] = protocol.PlumaConnectionError("fora de alcance")
+    clock.advance(days=90)
+    assert asyncio.run(coord._async_update_data()) is good  # nunca fica "velha"
+    assert coord.update_interval is None  # nem agenda tentativas automáticas
 
 
 @coordinator_tests

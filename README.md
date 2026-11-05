@@ -1,4 +1,10 @@
-**Todo o código foi criado com Claude Sonet 5.5 Médio, fiz uma revisão e tenho a integração funcionando no meu Home Assistant com 3 botijas.**
+# Disclaimer uso de AI
+- Todo o código da integração (engenharia reversa e a integração em si) foi criado com Claude Sonet 5.5 Médio.
+- Embora eu não seja letrado em Python, fiz uma revisão do código e tenho a integração funcionando no meu Home Assistant com 3 botijas.
+- Usei DeepSeek 4.1 Flash para me ajudar a ajustar a integração com ícone (branding) e ser instalável pelo HACS (Marketplace).
+
+# Disclaimer de uso de marca Galp
+- Logos e nomes da Galp, Pluma são propriedade da GALP ENERGIA, S.A. e utilizados usando os assets disponíveis na internet respeitando a uso da marca.
 
 # Galp Pluma para o Home Assistant
 
@@ -20,9 +26,13 @@ garrafas Galp Pluma com Bluetooth, sem usar a app Mundo Galp nem a conta Galp.
 - Um sensor de diagnóstico desativado por defeito (`byte 7`), cujo significado
   ainda não se conhece.
 - Funciona com o Bluetooth do próprio Home Assistant e com **proxies ESP32**.
+- **Intervalo de leitura por garrafa**, de 5 minutos a 30 dias, ou só manual
+  (ver [Intervalo por garrafa](#intervalo-por-garrafa)).
+- Botão **Atualizar agora** (lê já) e sensor de diagnóstico **Última leitura**.
 - Tolera o *deep sleep* da garrafa: se uma leitura falhar, mantém o último valor
-  e tenta de novo ao fim de 3 minutos (até 5 falhas seguidas, depois fica
-  "indisponível").
+  e tenta de novo ao fim de 3 minutos (5 vezes), depois de hora a hora (ou no
+  intervalo da garrafa, se for mais curto). Os sensores só ficam "indisponíveis"
+  quando a última leitura boa tem mais de 2 × o intervalo (e no mínimo 1 hora).
 
 ## Instalação
 
@@ -38,10 +48,76 @@ garrafas Galp Pluma com Bluetooth, sem usar a app Mundo Galp nem a conta Galp.
    exemplo "Pluma fogão"). O número do nome Bluetooth não coincide com o
    código impresso na garrafa, por isso não serve para as distinguir.
 
-   <img width="1064" height="759" alt="image" src="https://github.com/user-attachments/assets/c5b5b33a-c1c3-4bb5-8416-e62854d03153" />
-   <img width="1280" height="583" alt="image" src="https://github.com/user-attachments/assets/4cc0600e-cb1f-49b1-a65f-35b4f16d5ef7" />
-   <img width="1280" height="579" alt="image" src="https://github.com/user-attachments/assets/f80ca782-86f5-48d2-8bf9-d13b00fc701c" />
+-   <img width="1064" height="759" alt="image" src="https://github.com/user-attachments/assets/c5b5b33a-c1c3-4bb5-8416-e62854d03153" />
+-   <img width="1280" height="583" alt="image" src="https://github.com/user-attachments/assets/4cc0600e-cb1f-49b1-a65f-35b4f16d5ef7" />
+-   <img width="1280" height="579" alt="image" src="https://github.com/user-attachments/assets/f80ca782-86f5-48d2-8bf9-d13b00fc701c" />
 
+## Intervalo por garrafa
+
+Cada garrafa tem o seu intervalo entre leituras, em minutos: de 5 a 43200 (30
+dias), ou **0 para só ler manualmente**. Muda-se de duas formas, que ficam
+sempre iguais:
+
+- a entidade **Intervalo de leitura** do dispositivo (um `number`, na secção de
+  configuração), que também se pode usar em automatismos;
+- **Configurar** na página da integração.
+
+A alteração vale logo, sem recarregar a integração nem acordar a garrafa: a
+leitura seguinte é agendada a partir desse momento. Para ler já, use o botão
+**Atualizar agora**. O valor guarda-se e sobrevive a reinícios (em cada arranque
+do Home Assistant faz-se sempre uma leitura).
+
+Referências: 60 = 1 hora, 360 = 6 horas, 1440 = 1 dia, 10080 = 1 semana.
+
+### Exemplo: duas botijas de butano, uma em uso e outra de reserva
+
+Com um auxiliar `input_select.butano_em_uso` com as opções `"1"` e `"2"`, a que
+estiver em uso lê-se todos os dias e a de reserva uma vez por semana. Ao mudar
+a seleção, a que passa a estar em uso é lida logo. (Exemplo **não testado**; os
+nomes das entidades dependem do nome que der aos dispositivos e do idioma, por
+isso confirme-os em Definições → Entidades.)
+
+```yaml
+alias: Intervalos das botijas de butano
+triggers:
+  - trigger: state
+    entity_id: input_select.butano_em_uso
+actions:
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: input_select.butano_em_uso
+            state: "1"
+        sequence:
+          - action: number.set_value
+            target:
+              entity_id: number.butano_1_intervalo_de_leitura
+            data:
+              value: 1440
+          - action: number.set_value
+            target:
+              entity_id: number.butano_2_intervalo_de_leitura
+            data:
+              value: 10080
+          - action: button.press
+            target:
+              entity_id: button.butano_1_atualizar_agora
+    default:
+      - action: number.set_value
+        target:
+          entity_id: number.butano_2_intervalo_de_leitura
+        data:
+          value: 1440
+      - action: number.set_value
+        target:
+          entity_id: number.butano_1_intervalo_de_leitura
+        data:
+          value: 10080
+      - action: button.press
+        target:
+          entity_id: button.butano_2_atualizar_agora
+mode: single
+```
 
 ## Notas de utilização
 
@@ -49,8 +125,8 @@ garrafas Galp Pluma com Bluetooth, sem usar a app Mundo Galp nem a conta Galp.
   (ou outro telemóvel) estiver ligada, a leitura falha. Não é preciso emparelhar
   a garrafa na app para usar esta integração.
 - **Bateria:** cada leitura acorda a garrafa. O intervalo por defeito é de
-  15 minutos (Opções da integração: 5 a 240). O nível de gás muda devagar, por
-  isso não vale a pena ler com mais frequência.
+  15 minutos, e cada garrafa pode ter o seu. O nível de gás muda devagar, por
+  isso intervalos de horas ou dias chegam para a maioria dos casos.
 - **Alcance:** a garrafa tem de estar ao alcance de um adaptador ou proxy que
   suporte ligações ativas (os proxies ESP32 com `active: true`, o valor
   habitual do ESPHome). Sinais fracos (por volta de -85 dBm) dão ligações

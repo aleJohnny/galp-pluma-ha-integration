@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -14,14 +15,11 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfTemperature
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import PlumaConfigEntry
-from .const import DOMAIN
 from .coordinator import PlumaCoordinator
+from .entity import PlumaEntity
 from .protocol import PlumaReading
 
 
@@ -69,16 +67,17 @@ async def async_setup_entry(
 ) -> None:
     """Cria os sensores de uma garrafa."""
     coordinator = entry.runtime_data
-    async_add_entities(
+    entities: list[SensorEntity] = [
         PlumaSensor(coordinator, entry, description) for description in SENSORS
-    )
+    ]
+    entities.append(PlumaLastReadSensor(coordinator, entry))
+    async_add_entities(entities)
 
 
-class PlumaSensor(CoordinatorEntity[PlumaCoordinator], SensorEntity):
+class PlumaSensor(PlumaEntity, SensorEntity):
     """Sensor de uma garrafa Pluma."""
 
     entity_description: PlumaSensorDescription
-    _attr_has_entity_name = True
 
     def __init__(
         self,
@@ -86,17 +85,8 @@ class PlumaSensor(CoordinatorEntity[PlumaCoordinator], SensorEntity):
         entry: PlumaConfigEntry,
         description: PlumaSensorDescription,
     ) -> None:
-        super().__init__(coordinator)
+        super().__init__(coordinator, entry, description.key)
         self.entity_description = description
-        address = coordinator.address
-        self._attr_unique_id = f"{address}_{description.key}"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, address)},
-            connections={(dr.CONNECTION_BLUETOOTH, address)},
-            name=entry.title,
-            manufacturer="Galp",
-            model="Pluma (Bluetooth)",
-        )
 
     @property
     def native_value(self) -> int | None:
@@ -108,4 +98,28 @@ class PlumaSensor(CoordinatorEntity[PlumaCoordinator], SensorEntity):
     def extra_state_attributes(self) -> dict[str, Any] | None:
         if self.entity_description.key != "level" or self.coordinator.data is None:
             return None
-        return {"raw_frame": self.coordinator.data.raw}
+        attributes: dict[str, Any] = {"raw_frame": self.coordinator.data.raw}
+        if self.coordinator.last_error:
+            attributes["last_error"] = self.coordinator.last_error
+        return attributes
+
+
+class PlumaLastReadSensor(PlumaEntity, SensorEntity):
+    """Quando foi a última leitura bem-sucedida (útil com intervalos longos)."""
+
+    _attr_translation_key = "last_read"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: PlumaCoordinator, entry: PlumaConfigEntry) -> None:
+        super().__init__(coordinator, entry, "last_read")
+
+    @property
+    def available(self) -> bool:
+        # Fica disponível enquanto houver uma leitura anterior, mesmo que a
+        # última tentativa tenha falhado: é justamente aí que é útil.
+        return self.coordinator.last_read is not None
+
+    @property
+    def native_value(self) -> datetime | None:
+        return self.coordinator.last_read

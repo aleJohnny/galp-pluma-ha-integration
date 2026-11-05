@@ -28,9 +28,12 @@
           "scan_interval": "Minutes between readings"
         },
         "data_description": {
-          "scan_interval": "Each reading wakes the cylinder and uses its battery. 15 minutes or more is recommended."
+          "scan_interval": "Per cylinder. Examples: 60 = 1 hour, 1440 = 1 day, 10080 = 1 week, 43200 = 30 days. Use 0 to read manually only (\"Refresh now\" button). Each reading wakes the cylinder and uses its battery."
         }
       }
+    },
+    "error": {
+      "interval_too_short": "The minimum interval is 5 minutes (or 0 for manual reading only)."
     }
   },
   "entity": {
@@ -41,8 +44,21 @@
       "temperature": {
         "name": "Temperature"
       },
+      "last_read": {
+        "name": "Last reading"
+      },
       "raw_byte_7": {
         "name": "Raw value (byte 7)"
+      }
+    },
+    "button": {
+      "refresh": {
+        "name": "Refresh now"
+      }
+    },
+    "number": {
+      "scan_interval": {
+        "name": "Reading interval"
       }
     }
   }

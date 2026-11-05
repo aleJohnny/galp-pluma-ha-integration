@@ -67,6 +67,9 @@ if not REAL_HA:
             self.update_interval = update_interval
             self.data = None
 
+        def async_update_listeners(self):
+            self.listeners_called = getattr(self, "listeners_called", 0) + 1
+
     def async_ble_device_from_address(hass, address, connectable=True):
         return getattr(hass, "device", None)
 
@@ -82,6 +85,9 @@ if not REAL_HA:
         DataUpdateCoordinator=DataUpdateCoordinator,
         UpdateFailed=UpdateFailed,
     )
+    _stub("homeassistant.core", callback=lambda func: func)
+    _stub("homeassistant.util")
+    _stub("homeassistant.util.dt", utcnow=lambda: None)  # os testes substituem-no
 
 _pkg_dir = Path(__file__).parent.parent / "custom_components" / "galp_pluma"
 _pkg = types.ModuleType("galp_pluma")

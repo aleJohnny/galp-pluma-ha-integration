@@ -28,9 +28,12 @@
           "scan_interval": "Minutos entre leituras"
         },
         "data_description": {
-          "scan_interval": "Cada leitura acorda a garrafa e gasta a bateria dela. Recomendam-se 15 minutos ou mais."
+          "scan_interval": "Por garrafa. Exemplos: 60 = 1 hora, 1440 = 1 dia, 10080 = 1 semana, 43200 = 30 dias. Use 0 para só ler manualmente (botão «Atualizar agora»). Cada leitura acorda a garrafa e gasta a bateria dela."
         }
       }
+    },
+    "error": {
+      "interval_too_short": "O intervalo mínimo é de 5 minutos (ou 0 para leitura só manual)."
     }
   },
   "entity": {
@@ -41,8 +44,21 @@
       "temperature": {
         "name": "Temperatura"
       },
+      "last_read": {
+        "name": "Última leitura"
+      },
       "raw_byte_7": {
         "name": "Valor bruto (byte 7)"
+      }
+    },
+    "button": {
+      "refresh": {
+        "name": "Atualizar agora"
+      }
+    },
+    "number": {
+      "scan_interval": {
+        "name": "Intervalo de leitura"
       }
     }
   }
