@@ -9,6 +9,13 @@
           "address": "Garrafa"
         }
       },
+      "gas_type": {
+        "title": "Tipo de Gás",
+        "description": "Escolha o cilindro de gás. Apenas cosmético - altera o ícone.",
+        "data": {
+          "gas_type": "Tipo de Gás"
+        }
+      },
       "bluetooth_confirm": {
         "title": "Adicionar uma garrafa Galp Pluma",
         "description": "Quer configurar {name}?"
@@ -25,7 +32,8 @@
       "init": {
         "title": "Opções da Galp Pluma",
         "data": {
-          "scan_interval": "Minutos entre leituras"
+          "scan_interval": "Minutos entre leituras",
+          "gas_type": "Tipo de Gás"
         },
         "data_description": {
           "scan_interval": "Por garrafa. Exemplos: 60 = 1 hora, 1440 = 1 dia, 10080 = 1 semana, 43200 = 30 dias. Use 0 para só ler manualmente (botão «Atualizar agora»). Cada leitura acorda a garrafa e gasta a bateria dela."
@@ -59,6 +67,17 @@
     "number": {
       "scan_interval": {
         "name": "Intervalo de leitura"
+      }
+    },
+    "select": {
+      "gas_type": {
+        "name": "Gas type",
+        "state": { "butane": "Butano", "propane": "Propano" }
+      }
+    },
+    "selector": {
+      "gas_type": {
+      "options": { "butane": "Butano", "propane": "Propano" }
       }
     }
   }

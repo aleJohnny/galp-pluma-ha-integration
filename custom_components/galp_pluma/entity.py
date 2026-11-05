@@ -24,6 +24,7 @@ class PlumaEntity(CoordinatorEntity[PlumaCoordinator]):
         self, coordinator: PlumaCoordinator, entry: PlumaConfigEntry, key: str
     ) -> None:
         super().__init__(coordinator)
+        self.entry = entry
         address = coordinator.address
         self._attr_unique_id = f"{address}_{key}"
         self._attr_device_info = DeviceInfo(

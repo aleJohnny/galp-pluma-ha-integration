@@ -18,6 +18,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import PlumaConfigEntry
+from .const import gas_type_from_entry
 from .coordinator import PlumaCoordinator
 from .entity import PlumaEntity
 from .protocol import PlumaReading
@@ -98,7 +99,10 @@ class PlumaSensor(PlumaEntity, SensorEntity):
     def extra_state_attributes(self) -> dict[str, Any] | None:
         if self.entity_description.key != "level" or self.coordinator.data is None:
             return None
-        attributes: dict[str, Any] = {"raw_frame": self.coordinator.data.raw}
+        attributes: dict[str, Any] = {
+            "raw_frame": self.coordinator.data.raw,
+            "gas_type": gas_type_from_entry(self.entry)
+            }
         if self.coordinator.last_error:
             attributes["last_error"] = self.coordinator.last_error
         return attributes

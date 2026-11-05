@@ -22,6 +22,10 @@ from .const import (
     DOMAIN,
     MAX_SCAN_INTERVAL,
     MIN_SCAN_INTERVAL,
+    CONF_GAS_TYPE,
+    GAS_ICONS,
+    GAS_TYPES,
+    DEFAULT_GAS_TYPE,
     is_pluma_name,
 )
 
@@ -30,6 +34,17 @@ def _short_title(address: str) -> str:
     """Título curto sem expor o número de série que vem no nome Bluetooth."""
     return f"Pluma {address.replace(':', '')[-6:].upper()}"
 
+def _gas_type_schema(default: str) -> vol.Schema:
+    return vol.Schema(
+        {
+            vol.Required(CONF_GAS_TYPE, default=default): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=GAS_TYPES,
+                    translation_key=CONF_GAS_TYPE,
+                )
+            )
+        }
+    )
 
 class PlumaConfigFlow(ConfigFlow, domain=DOMAIN):
     """Configura garrafas Pluma."""
@@ -68,6 +83,27 @@ class PlumaConfigFlow(ConfigFlow, domain=DOMAIN):
             description_placeholders={"name": title},
         )
 
+    async def async_step_gas_type(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Tipo de gás após confirmação da descoberta."""
+        assert self._discovery_info is not None
+        if user_input is not None:
+            return self.async_create_entry(
+                title=_short_title(self._discovery_info.address),
+                data={
+                    CONF_ADDRESS: self._discovery_info.address,
+                    CONF_GAS_TYPE: user_input[CONF_GAS_TYPE],
+                },
+            )
+        return self.async_show_form(
+            step_id="gas_type",
+            data_schema=_gas_type_schema(DEFAULT_GAS_TYPE),
+            description_placeholders={
+                "name": _short_title(self._discovery_info.address)
+            },
+        )
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -77,7 +113,9 @@ class PlumaConfigFlow(ConfigFlow, domain=DOMAIN):
             await self.async_set_unique_id(format_mac(address), raise_on_progress=False)
             self._abort_if_unique_id_configured()
             return self.async_create_entry(
-                title=_short_title(address), data={CONF_ADDRESS: address}
+                title=_short_title(address),
+                data={CONF_ADDRESS: address,
+                      CONF_GAS_TYPE: user_input[CONF_GAS_TYPE],}
             )
 
         current_ids = self._async_current_ids()
@@ -123,27 +161,32 @@ class PlumaOptionsFlow(OptionsFlow):
         current = int(
             self.config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
         )
+
+        current_gas = gas_type_from_entry(self.config_entry)
+        
         if user_input is not None:
             minutes = int(user_input[CONF_SCAN_INTERVAL])
             if 0 < minutes < MIN_SCAN_INTERVAL:
                 errors["base"] = "interval_too_short"
                 current = minutes
             else:
-                return self.async_create_entry(data={CONF_SCAN_INTERVAL: minutes})
+                return self.async_create_entry(
+                    data={
+                        CONF_SCAN_INTERVAL: minutes,
+                        CONF_GAS_TYPE: user_input[CONF_GAS_TYPE],
+                    }
+                )
 
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_SCAN_INTERVAL, default=current): selector.NumberSelector(
-                        selector.NumberSelectorConfig(
-                            min=0,
-                            max=MAX_SCAN_INTERVAL,
-                            step=1,
-                            mode=selector.NumberSelectorMode.BOX,
-                            unit_of_measurement="min",
+                    vol.Required(CONF_SCAN_INTERVAL, default=current): selector.NumberSelector(...),
+                    vol.Required(CONF_GAS_TYPE, default=current_gas): selector.SelectSelector(
+                        selector.SelectSelectorConfig(
+                            options=GAS_TYPES, translation_key=CONF_GAS_TYPE
                         )
-                    )
+                    ),
                 }
             ),
             errors=errors,

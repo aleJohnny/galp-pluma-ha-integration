@@ -8,7 +8,12 @@ from homeassistant.core import HomeAssistant
 
 from .coordinator import PlumaCoordinator
 
-PLATFORMS: list[Platform] = [Platform.BUTTON, Platform.NUMBER, Platform.SENSOR]
+PLATFORMS: list[Platform] = [
+    Platform.BUTTON,
+    Platform.NUMBER,
+    Platform.SELECT,
+    Platform.SENSOR
+    ]
 
 type PlumaConfigEntry = ConfigEntry[PlumaCoordinator]
 
@@ -29,6 +34,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: PlumaConfigEntry) -> boo
 async def _async_options_updated(hass: HomeAssistant, entry: PlumaConfigEntry) -> None:
     """Aplica o novo intervalo de leitura sem recarregar (e sem acordar a garrafa)."""
     entry.runtime_data.async_apply_options()
+    entry.runtime_data.async_update_listeners()
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: PlumaConfigEntry) -> bool:

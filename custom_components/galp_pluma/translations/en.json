@@ -9,6 +9,13 @@
           "address": "Cylinder"
         }
       },
+      "gas_type": {
+        "title": "Gas type",
+        "description": "Choose the gas in this cylinder. Cosmetic only — it changes the icon.",
+        "data": {
+          "gas_type": "Gas type"
+        }
+      },
       "bluetooth_confirm": {
         "title": "Add a Galp Pluma cylinder",
         "description": "Do you want to set up {name}?"
@@ -25,7 +32,8 @@
       "init": {
         "title": "Galp Pluma options",
         "data": {
-          "scan_interval": "Minutes between readings"
+          "scan_interval": "Minutes between readings",
+          "gas_type": "Gas type"
         },
         "data_description": {
           "scan_interval": "Per cylinder. Examples: 60 = 1 hour, 1440 = 1 day, 10080 = 1 week, 43200 = 30 days. Use 0 to read manually only (\"Refresh now\" button). Each reading wakes the cylinder and uses its battery."
@@ -59,6 +67,17 @@
     "number": {
       "scan_interval": {
         "name": "Reading interval"
+      }
+    },
+    "select": {
+      "gas_type": {
+        "name": "Gas type",
+        "state": { "butane": "Butane", "propane": "Propane" }
+      }
+    },
+    "selector": {
+      "gas_type": {
+      "options": { "butane": "Butane", "propane": "Propane" }
       }
     }
   }
