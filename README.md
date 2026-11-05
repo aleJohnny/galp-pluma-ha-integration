@@ -36,9 +36,15 @@ garrafas Galp Pluma com Bluetooth, sem usar a app Mundo Galp nem a conta Galp.
 
 ## Instalação
 
-### HACS (recomendada)
+### Marketplace (aka HACS)
 
-1. Abra o HACS (ou Marketplace se você está usando 2026.11) > menu com 3 pontos (canto superior direito) > **Custom repositories**.
+Use o link abaixo para ir direto para o repositório no Marketplace (aka HACS):
+
+[![Abra sua instância do Home Assistant e abra o repositório dentro do Marktplace (aka HACS).](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=alejohnny&repository=galp-pluma-ha-integration)
+
+_ou_
+
+1. Abra o HACS (ou Marketplace se você está usando 2026.11) > Add from Link ou menu com 3 pontos (canto superior direito) > **Custom repositories**.
 2. Adicione `https://github.com/aleJohnny/galp-pluma-ha-integration` com categoria **Integration**.
 3. Procure por "Galp Pluma" no HACS, instale e reinicie o Home Assistant.
 
