@@ -17,15 +17,14 @@ from homeassistant.helpers import selector
 from homeassistant.helpers.device_registry import format_mac
 
 from .const import (
+    CONF_GAS_TYPE,
     CONF_SCAN_INTERVAL,
+    DEFAULT_GAS_TYPE,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    GAS_TYPES,
     MAX_SCAN_INTERVAL,
     MIN_SCAN_INTERVAL,
-    CONF_GAS_TYPE,
-    GAS_ICONS,
-    GAS_TYPES,
-    DEFAULT_GAS_TYPE,
     is_pluma_name,
 )
 
@@ -70,12 +69,12 @@ class PlumaConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_bluetooth_confirm(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Pede confirmação para adicionar a garrafa descoberta."""
         assert self._discovery_info is not None
         title = _short_title(self._discovery_info.address)
         if user_input is not None:
             return self.async_create_entry(
-                title=title, data={CONF_ADDRESS: self._discovery_info.address}
+                title=title,
+                data={CONF_ADDRESS: self._discovery_info.address},
             )
         self._set_confirm_only()
         return self.async_show_form(
